@@ -208,6 +208,24 @@ JenkinsNotifierRequest.prototype.processFinished = JenkinsNotifierRequest.protot
   return [];
 }
 
+ 
+// handles custom notification
+// example:
+// { "name":"test",
+//  "build":{
+//    "phase":"CUSTOM",
+//     "message":"any message goes here"
+//}}
+JenkinsNotifierRequest.prototype.processCustom = function(data){
+  // TODO
+  // validate better
+  if (data.build.message){
+    return [data.build.message];
+  }
+
+  return [];
+}
+
 JenkinsNotifierRequest.prototype.process = function(data) {
   /* if we have a handler, then handle it */
   var func = this['process' + lodash.upperFirst(data.build.phase.toLowerCase())];

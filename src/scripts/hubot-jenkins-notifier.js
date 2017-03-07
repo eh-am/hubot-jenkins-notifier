@@ -43,7 +43,8 @@ var util = require('util');
 var events = require('events');
 var lodash = require('lodash');
 
-var JenkinsNotifierRequest = function() {
+var JenkinsNotifierRequest = function(robot) {
+  this.robot = robot;
   this.query = {};
   this.status = "";
   events.EventEmitter.call(this);
@@ -86,6 +87,12 @@ JenkinsNotifierRequest.buildEnvelope = function(query) {
   if (query.user) { envelope.user.user = query.user; }
   if (query.room) { envelope.user.room = envelope.room = query.room; }
   return envelope;
+}
+
+JenkinsNotifierRequest.prototype.isUsingSlack = function(adapterName){
+  if (!adapterName) adapterName = this.robot.adapterName;
+
+  return (adapterName === 'slack');
 }
 
 JenkinsNotifierRequest.prototype.setStatus = function(status) {
@@ -165,8 +172,12 @@ JenkinsNotifierRequest.prototype.shouldNotify = function(data) {
 
 JenkinsNotifierRequest.prototype.processStarted = function(data) {
   this.emit('handleSuccess', data.name);
-  if (this.shouldNotify(data)) {
-    return [data.name + " build #" + data.build.number + " started: " + this.getFullUrl(data)];
+  if (this.shouldNotify(data)) { 
+    if (this.isUsingSlack()){
+      return [`_${data.name}_ build #${data.build.number} *started* ${this.getFullUrl(data)}`];
+    } else {
+      return [data.name + " build #" + data.build.number + " started: " + this.getFullUrl(data)];
+    }
   }
   return [];
 }
@@ -181,9 +192,19 @@ JenkinsNotifierRequest.prototype.processFinished = JenkinsNotifierRequest.protot
     this.emit('handleFailed', data.name);
 
     if (this.shouldNotify(data)) {
-      var message = data.name + " build #" + data.build.number + " " + build + " failing: " + this.getFullUrl(data);
+      var message;
+      if (this.isUsingSlack()){
+        message = `_${data.name}_ build #${data.build.number} build *failing* ${this.getFullUrl(data)}`;
+      } else {
+        message = data.name + " build #" + data.build.number + " " + build + " failing: " + this.getFullUrl(data);
+      }
+
       if (data.build.log) {
-        message = message + "\r\n" + data.build.log;
+        if (this.isUsingSlack()){
+          message = message + `\n \`\`\`${data.build.log}\`\`\` `;
+        } else {
+          message = message + "\r\n" + data.build.log;
+        }
       }
       return [message];
     } else {
@@ -199,7 +220,11 @@ JenkinsNotifierRequest.prototype.processFinished = JenkinsNotifierRequest.protot
     this.emit('handleSuccess', data.name);
 
     if (this.shouldNotify(data)) {
-      return [data.name + " build #" + data.build.number + " " + build + ": " + this.getFullUrl(data)];
+      if (this.isUsingSlack()){
+        return [`_${data.name}_ build #${data.build.number} *${build}*: ${this.getFullUrl(data)}`];
+      } else {
+        return [data.name + " build #" + data.build.number + " " + build + ": " + this.getFullUrl(data)];
+      }      
     } else {
       this.logMessage("Not sending message, not necessary");
     }
@@ -268,7 +293,7 @@ var JenkinsNotifier = (function() {
   };
 
   JenkinsNotifier.prototype.process = function(req, res) {
-    var notifier = new JenkinsNotifierRequest();
+    var notifier = new JenkinsNotifierRequest(this.robot);
     notifier.on('handleFailed', function(build) { this.statuses[build.name] = 'FAILURE'; }.bind(this));
     notifier.on('handleSuccess', function(build) { this.statuses[build.name] = 'SUCCESS'; }.bind(this));
 
@@ -292,8 +317,24 @@ var JenkinsNotifier = (function() {
 
       /* Send out all the messages */
       var envelope = JenkinsNotifierRequest.buildEnvelope(notifier.getQuery());
+      var response;     
+      var attachment;
+ 
       lodash.forEach(messages, function(msg) {
-        this.robot.send(envelope, msg);
+        if (notifier.isUsingSlack()){
+          response = { attachments: [] };
+          attachment = { mrkdwn_in: ["text"] };
+
+          attachment.text = msg;
+
+          if (body.build.status === 'FAILURE') attachment.color = '#F44336'
+          else if (body.build.status === 'SUCCESS') attachment.color = '#069' // jenkin's blue
+
+          response.attachments.push(attachment);
+          this.robot.send(envelope, response)
+        }
+        else
+          this.robot.send(envelope, msg);
       }.bind(this));
 
       res.status(200).end('');
@@ -318,3 +359,4 @@ module.exports = function(robot) {
   return robot.jenkins_notifier;
 };
 module.exports.JenkinsNotifierRequest = JenkinsNotifierRequest;
+

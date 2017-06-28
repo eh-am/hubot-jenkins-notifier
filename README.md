@@ -1,5 +1,7 @@
 # hubot-jenkins-notifier
 
+This is a fork from [halkeye/hubot-jenkins-notifier](https://github.com/halkeye/hubot-jenkins-notifier), I haven't pushed to NPM, so be careful.
+
 [![Build Status](https://travis-ci.org/halkeye/hubot-jenkins-notifier.png?branch=master)](https://travis-ci.org/halkeye/hubot-jenkins-notifier)
 [![Dependency Status](https://gemnasium.com/halkeye/hubot-jenkins-notifier.png)](https://gemnasium.com/halkeye/hubot-jenkins-notifier)
 [![Codacy Badge](https://api.codacy.com/project/badge/Grade/b7b8a9ded12849e3942131cc78fd4077)](https://www.codacy.com/app/halkeye/hubot-jenkins-notifier?utm_source=github.com&amp;utm_medium=referral&amp;utm_content=halkeye/hubot-jenkins-notifier&amp;utm_campaign=Badge_Grade)

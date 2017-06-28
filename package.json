@@ -1,7 +1,7 @@
 {
   "name": "hubot-jenkins-notifier",
   "description": "Notifies about Jenkins build errors via Jenkins Notification Plugin",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "license": "MIT",
   "homepage": "https://github.com/eh-am/hubot-jenkins-notifier",
   "author": {
@@ -11,7 +11,7 @@
   },
   "publishConfig": {
     "registry": "https://nexus.tekstack.ca/repository/npm-hosted/"
-  },  
+  },
   "repository": {
     "type": "git",
     "url": "git://github.com/halkeye/hubot-jenkins-notifier.git"
